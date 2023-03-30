@@ -1,5 +1,28 @@
 const net = require('net');
+const os = require('os')
 const parseString = require('./parse.js');
+
+let hostIp;
+// utility functions
+const interfaces = os.networkInterfaces();
+const getNetworkAddress = () => {
+	for (const name of Object.keys(interfaces)) {
+		for (const interface of interfaces[name]) {
+			const {address, family, internal} = interface;
+			if (family === 'IPv4' && !internal) {
+				return address;
+			}
+		}
+	}
+};
+
+
+try {
+  hostIp = String(getNetworkAddress());
+} catch (err) {
+  console.log(err)
+  exit(1);
+}
 
 const server = net.createServer((socket) => {
   // Handle incoming connections here
@@ -8,8 +31,9 @@ const server = net.createServer((socket) => {
   socket.on('data', (data) => {
     // Handle incoming data here
     console.log(`Received data: ${data.toString()}`);
-    parseString(data);
+    parseString(data.toString());
     socket.write("Server received ok");
+    console.log("Done\n\n")
   });
 
   socket.on('end', () => {
@@ -20,5 +44,6 @@ const server = net.createServer((socket) => {
 
 // Start listening on port 8080
 server.listen(8080, () => {
-  console.log('Server started');
+  const { port } = server.address();
+  console.log('Running at http://localhost:' + String(port) + ", on your network: http://" + String(hostIp) + ":" + String(port));
 });

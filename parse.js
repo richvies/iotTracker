@@ -1,9 +1,8 @@
-const data = "#867198059727390#MT710#0000#AUTO#1#38#$GPRMC,105721.00,A,2238.3071,N,11401.7575,E,,96.70,250321,,,A*74"
-const h_fields = data.split('#');
-const g_fields = data.split(',');
-
-function parseString(string)
+function parseString(str)
 {
+  const h_fields = str.split("#")
+  const g_fields = str.split(',');
+
   const imei = h_fields[1];
   const username = h_fields[2];
   const pwd = h_fields[3];
@@ -31,4 +30,7 @@ function parseString(string)
 
 module.exports = parseString;
 
-// parseString(data);
+// test_data = Buffer("#867198059727390#MT710#0000#AUTO#1#38#$GPRMC,105721.00,A,2238.3071,N,11401.7575,E,,96.70,250321,,,A*74").toString()
+// // test_data = "#867198059727390#MT710#0000#AUTO#1#38#$GPRMC,105721.00,A,2238.3071,N,11401.7575,E,,96.70,250321,,,A*74"
+// test_data.split('#')
+// parseString(test_data);
