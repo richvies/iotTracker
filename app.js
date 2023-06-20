@@ -4,7 +4,7 @@ const data = "#666198059727390#MT710#0000#AUTO#1#38#$GPRMC,105721.00,A,2238.3071
 
 const client = new net.Socket();
 
-client.connect(8080, 'localhost', () => {
+client.connect(8080, '35.233.18.208', () => {
   console.log('Connected to server');
 });
 
@@ -18,5 +18,6 @@ client.on('close', () => {
 
 // Send data to the server every 10 seconds
 setInterval(() => {
+  console.log('write')
   client.write(data);
 }, 5000);
