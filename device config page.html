@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 120px;
+      background-color: #555;
+      color: #fff;
+      text-align: center;
+      padding: 5px 0;
+      border-radius: 6px;
+
+      position: absolute;
+      z-index: 1;
+      bottom: 100%;
+      left: 50%;
+      margin-left: 60px;
+
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+<h2>IoT Tracker Control</h2>
+
+<form action="/submit">
+
+  <div class="tooltip">
+    Protocol:
+    <span class="tooltiptext">TCP ensures data is received. UDP is fire and forget</span>
+  </div>
+  <select name="setting_protocol">
+    <option value="TCP">TCP</option>
+    <option value="UDP">UDP</option>
+  </select>
+  <br><br>
+
+  <div class="tooltip">
+    Network Mode:
+    <span class="tooltiptext">Device will use either LTE-M or NB-IoT networks</span>
+  </div>
+  <select name="setting_NWM">
+    <option value="LET">LTE-M</option>
+    <option value="NB">NB-IoT</option>
+  </select>
+  <br><br>
+
+  <div class="tooltip">
+    Heartbeat:
+    <span class="tooltiptext">Device will send periodic message to show it's alive</span>
+  </div>
+  <input type="radio" id="heartbeat_on" name="setting_heartbeat" value="on" onchange="handleHeartbeatChange(this)">
+  <label for="heartbeat_on">On</label>
+  <input type="radio" id="heartbeat_off" name="setting_heartbeat" value="off" onchange="handleHeartbeatChange(this)" checked>
+  <label for="heartbeat_off">Off</label>
+  <div id="heartbeat_interval_container" style="display: none;">
+    Interval: <input type="number" id="heartbeat_interval_box" name="heartbeat_interval" min="5" max="60">
+  </div>
+  <br><br>
+
+  <div class="tooltip">
+    SOS button:
+    <span class="tooltiptext">Device will send a SOS message when power button pressed for 3 seconds</span>
+  </div>
+  <input type="radio" id="on" name="setting_sos" value="on">
+  <label for="on">On</label>
+  <input type="radio" id="off" name="setting_sos" value="off" checked>
+  <label for="off">Off</label>
+  <br><br>
+
+  <div class="tooltip">
+    Mode:
+    <span class="tooltiptext" id="mode_description">Device operating mode</span>
+    <select id = "setting_mode" name="setting_mode" onchange="handleModeChange(this)">
+      <option value="rt" selected>Real time</option>
+      <option value="autogps">Auto GPS</option>
+      <option value="deepsleepperiodic">Deep sleep, periodic wakeup</option>
+      <option value="deepsleepmotion">Deep sleep, motion detect</option>
+      <option value="wifi">Wi-Fi only</option>
+      <option value="sms">SMS only</option>
+      <option value="deepsleepmotionperiodic">Deep sleep, motion detect & periodic</option>
+    </select>
+    <div id="mode_parameters" style="display: block;">
+    </div>
+  </div>
+  <br>
+
+  <br>
+  <input type="submit" value="Configure">
+</form>
+<br>
+<button id="reboot_button">
+  Reboot
+</button>
+<br>
+<button id="read_config_button">
+  Read Config
+</button>
+
+<script>
+  function handleHeartbeatChange(radio) {
+    var container = document.getElementById('heartbeat_interval_container');
+    if (radio.value == 'on') {
+      container.style.display = 'block';
+    } else {
+      container.style.display = 'none';
+    }
+  }
+
+  function handleModeChange(select) {
+    var mode_parameters = document.getElementById('mode_parameters');
+    mode_parameters.innerHTML = '';
+
+    var mode_description = document.getElementById('mode_description');
+
+    if (select.value == 'rt') {
+      mode_description.textContent = 'Send location every T seconds';
+
+      var interval_parameter = document.createElement('div');
+      interval_parameter.innerHTML = 'Interval (seconds): <input type="number" id="interval_parameter_box" name="interval_parameter_box" min="60" max="600">';
+      mode_parameters.appendChild(interval_parameter);
+    } else if (select.value == 'autogps') {
+      mode_description.textContent = 'Optionally turn off GPS and TCP when not in use';
+
+      var interval_parameter = document.createElement('div');
+      interval_parameter.innerHTML = 'Interval (minutes): <input type="number" id="interval_parameter_box" name="interval_parameter_box" min="10" max="60">';
+      mode_parameters.appendChild(interval_parameter);
+
+      createOnOffSelectBox(mode_parameters, 'GPS', 'keep alive');
+      createLineBreak(mode_parameters);
+      createOnOffSelectBox(mode_parameters, 'TCP', 'keep alive');
+    } else if (select.value == 'deepsleepperiodic') {
+      mode_description.textContent = 'Deep sleep and wakeup every T hours';
+
+      var interval_parameter = document.createElement('div');
+      interval_parameter.innerHTML = 'Interval (hours): <input type="number" id="interval_parameter_box" name="interval_parameter_box" min="1" max="24">';
+      mode_parameters.appendChild(interval_parameter);
+    } else if (select.value == 'deepsleepmotion') {
+      mode_description.textContent = 'Deep sleep and wakeup when motion detected';
+
+      var interval_parameter = document.createElement('div');
+      interval_parameter.innerHTML = 'Interval (seconds): <input type="number" id="interval_parameter_box" name="interval_parameter_box" min="60" max="600">';
+      mode_parameters.appendChild(interval_parameter);
+    } else if (select.value == 'wifi') {
+      mode_description.textContent = 'Only send when connected to wifi';
+
+      var interval_parameter = document.createElement('div');
+      interval_parameter.innerHTML = 'Interval (minutes): <input type="number" id="interval_parameter_box" name="interval_parameter_box" min="1" max="60">';
+      mode_parameters.appendChild(interval_parameter);
+    } else if (select.value == 'sms') {
+      mode_description.textContent = 'Text WHERE0000 to get current location';
+    } else if (select.value == 'deepsleepmotionperiodic') {
+      mode_description.textContent = 'Deep sleep and wakeup every T hours or when motion detected';
+
+      var interval_parameter = document.createElement('div');
+      interval_parameter.innerHTML = 'Interval during motion (seconds): <input type="number" id="interval_parameter_box" name="interval_parameter_box" min="60" max="600">';
+      mode_parameters.appendChild(interval_parameter);
+
+      var interval_parameter_2 = document.createElement('div');
+      interval_parameter_2.innerHTML = 'Interval when asleep (hours): <input type="number" id="interval_parameter_2" name="interval_parameter_2" min="1" max="24">';
+      mode_parameters.appendChild(interval_parameter_2);
+    }
+  }
+
+  function createLineBreak(parent) {
+    parent.appendChild(document.createElement('br'));
+  }
+
+  function createOnOffSelectBox(parent, prefix, description) {
+    const id = prefix + 'OnOffSelect';
+
+    var onOffSelect = document.createElement('select');
+    onOffSelect.setAttribute('id', id);
+    onOffSelect.setAttribute('name', id);
+
+    var onOffSelectLabel = document.createElement('label');
+    onOffSelectLabel.setAttribute('for', id);
+    onOffSelectLabel.textContent = prefix + ' ' + description + ': ';
+
+    var onOption = document.createElement('option');
+    onOption.text = 'On';
+    onOption.value = "on";
+    onOffSelect.appendChild(onOption);
+
+    var offOption = document.createElement('option');
+    offOption.text = 'Off';
+    offOption.value = "off";
+    onOffSelect.appendChild(offOption);
+
+    parent.appendChild(onOffSelectLabel);
+    parent.appendChild(onOffSelect);
+  }
+
+  window.onload = function() {
+    handleModeChange(document.getElementById('setting_mode'));
+  };
+
+</script>
+
+</body>
+</html>

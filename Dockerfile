@@ -1,8 +1,8 @@
-FROM node:18-alpine
+FROM golang:alpine3.18
 WORKDIR /home/app
-COPY ./server .
+COPY server.go .
 
 ENV PORT=8080
 
-ENTRYPOINT ["node"]
-CMD ["server.js"]
+ENTRYPOINT ["go"]
+CMD ["run", "server.go"]
